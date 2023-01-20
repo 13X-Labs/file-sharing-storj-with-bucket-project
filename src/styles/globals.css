@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.bg-hero {
+  background-color: gray;
+  background-size: cover;
+  background-position: center;
+}
