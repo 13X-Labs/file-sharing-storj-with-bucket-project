@@ -17,13 +17,18 @@ const LinkShare = process.env.LINK_SHARE
 const BucketName = process.env.BUCKET_NAME;
 const StorjAuth = process.env.STORJ_AUTH;
 
+const s3 = new AWS.S3({
+  accessKeyId: ID,
+  secretAccessKey: SECRET,
+  endpoint: ENDPOINT,
+});
+
 export default class Home extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       urlImage: null,
-      urlShareLink: null,
-      kData: '',
+      kData: [],
       precentageUpload: 0,
       value: '',
       copied: false,
@@ -37,12 +42,6 @@ export default class Home extends React.Component {
 
   // upload image to ipfs (demo server storj bucket server)
   uploadImage = (e) => { 
-    const s3 = new AWS.S3({
-        accessKeyId: ID,
-        secretAccessKey: SECRET,
-        endpoint: ENDPOINT
-    });
-
     if (e.target.files && e.target.files[0]) {
       let file = e.target.files[0];
 
@@ -59,40 +58,53 @@ export default class Home extends React.Component {
       };
       
       let that = this;
+      let options = {partSize: 10 * 1024 * 1024, queueSize: 1};
       // Uploading files to the bucket
-      s3.upload(params, function(e, data) {
+      s3.upload(params, options, function(e, data) {
         that.setState({
           kData: data
         })
-        
-        axios.post(StorjAuth, {
-          access_grant: AccessGrant,
-          public: true,
-        }, {
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-          onUploadProgress: (progressEvent) => {
-            let percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-            if (percentCompleted <= 100) {
-              that.setState({
-                precentageUpload: percentCompleted
-              })
-            }
-          }
-        }
-        ).then((res) => {
-          let urlShareLink = LinkShare + JSON.parse(res.request.response).access_key_id + '/' + BucketName + '/' + data.Key
+      }).on('httpUploadProgress', function(e) {
+        let percentCompleted = Math.round((e.loaded * 100) / e.total)
+        if (percentCompleted <= 100) {
           that.setState({
-            urlImage: urlShareLink
+            precentageUpload: percentCompleted
           })
-        })
-        
+        }
       });
+    }
+
+    axios.post(StorjAuth, {
+      access_grant: AccessGrant,
+      public: true,
+    },
+    ).then((res) => {
+      this.setState({
+        access: res.request.response
+      })
+    })
+
+    
+  }
+
+  getUploadLink = () => {
+    if (this.state.access) {
+      let parseAccess = JSON.parse(this.state.access)
+      let AccessKeyId = parseAccess.access_key_id
+      if (this.state.kData.Key) {
+        let urlShareLink = LinkShare + AccessKeyId + '/' + BucketName + '/' + this.state.kData.Key
+        this.setState({
+          urlImage: urlShareLink
+        })
+      }
+      
     }
   }
 
 
   render() {
+    this.getUploadLink()
+
     return (
       <>
         <Head>
@@ -124,9 +136,9 @@ export default class Home extends React.Component {
                         <input id='file-input' type='file' onChange={this.uploadImage.bind(this)} className="hidden" />
                     </label>
                     <div className="w-full bg-gray-200 rounded-full dark:bg-gray-700">
-                      {this.state.precentageUpload == 100 ? 
-                      <div className="bg-gray-600 text-xs font-medium text-red-300 text-center p-1 leading-none rounded-full"> Completed</div>
-                      : <div className="bg-gray-600 text-xs font-medium text-blue-100 text-center p-1 leading-none rounded-full">  Upload & Waiting </div>}
+                    {this.state.precentageUpload == 100 ? 
+                                      <div className="bg-gray-600 text-xs font-medium text-white text-center p-1 leading-none rounded-full">Completed</div>
+                                      : <div className="bg-gray-600 text-xs font-medium text-blue-100 text-center p-1 leading-none rounded-full" style={{width: this.state.precentageUpload * 10, maxWidth: "100%"}}>  {this.state.precentageUpload}%</div>}
                       
                     </div>
                     <h1 className="pt-8 pb-3 font-semibold sm:text-lg text-gray-900">
