@@ -1,0 +1,8 @@
+---
+  deployment:
+    task:
+      - export DEPLOY_DIR=/home/hongochai10/public_html/uploadfile.13xlabs.com
+      - /bin/npm ci
+      - /bin/npm run build
+      - /bin/npm run export
+      - /bin/cp -R out/* DEPLOY_DIR
