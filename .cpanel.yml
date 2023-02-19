@@ -1,5 +1,0 @@
----
-  deployment:
-    task:
-      - export DEPLOY_DIR=/home/hongochai10/public_html/uploadfile.13xlabs.com
-      - /usr/local/bin/cp -R * DEPLOY_DIR
