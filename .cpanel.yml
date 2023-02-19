@@ -2,7 +2,4 @@
   deployment:
     task:
       - export DEPLOY_DIR=/home/hongochai10/public_html/uploadfile.13xlabs.com
-      - /usr/local/bin/npm install
-      - /usr/local/bin/npm run build
-      - /usr/local/bin/npm run export
-      - /usr/local/bin/cp -R out/* DEPLOY_DIR
+      - /usr/local/bin/cp -R * DEPLOY_DIR
